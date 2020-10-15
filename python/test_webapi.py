@@ -30,7 +30,7 @@ class TestWebApi(unittest.TestCase):
     self.assertFalse(v.Query('status'))
     
   def test_WebApi_Query_BadUrl(self):
-    v = WebApi(dataURL = 'http://isvhsopen.com/')
+    v = WebApi(dataURL = 'https://isvhsopen.com/')
     self.assertFalse(v.Query('status'))
     
   #----Update----
@@ -63,7 +63,7 @@ class TestWebApi(unittest.TestCase):
     self.assertFalse(v.Update('test1', 'v1'))
     
   def test_WebApi_Update_BadUrl(self):
-    v = WebApi(dataURL = 'http://isvhsopen.com/')
+    v = WebApi(dataURL = 'https://isvhsopen.com/')
     self.assertFalse(v.Update('test1', 'v1'))
   
   

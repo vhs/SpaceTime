@@ -26,7 +26,7 @@ class TestVHSApi(unittest.TestCase):
     self.assertFalse(v.Query('door'))
     
   def test_VHSApi_Query_BadUrl(self):
-    v = VHSApi(dataURL = 'http://api.vanhack.ca/')
+    v = VHSApi(dataURL = 'https://api.vanhack.ca/')
     self.assertFalse(v.Query('door'))
     
   #----Update----
@@ -49,7 +49,7 @@ class TestVHSApi(unittest.TestCase):
     self.assertFalse(v.Update('test1', 'v1'))
     
   def test_VHSApi_Update_BadUrl(self):
-    v = VHSApi(dataURL = 'http://api.vanhack.ca/')
+    v = VHSApi(dataURL = 'https://api.vanhack.ca/')
     self.assertFalse(v.Update('test1', 'v1'))
   
   

@@ -2,15 +2,15 @@ import requests
 from time import sleep
 
 class WebApi:
-  # The isvhsopen.com Web API is at http://isvhsopen.com/api/status/
-  # It is different from the VHS API at http://api.vanhack.ca/
+  # The isvhsopen.com Web API is at https://isvhsopen.com/api/status/
+  # It is different from the VHS API at https://api.vanhack.ca/
   # Source code is at https://github.com/vhs/isvhsopen
   # An API Key must be obtained and added to this file to make updates possible.
   
   #Example queries:
-  #GET http://isvhsopen.com/api/status/
-  #POST http://isvhsopen.com/api/status/open?key=ISVHSOPEN_API_KEY&until=12:30
-  #POST http://isvhsopen.com/api/status/closed?key=ISVHSOPEN_API_KEY
+  #GET https://isvhsopen.com/api/status/
+  #POST https://isvhsopen.com/api/status/open?key=ISVHSOPEN_API_KEY&until=12:30
+  #POST https://isvhsopen.com/api/status/closed?key=ISVHSOPEN_API_KEY
   
   def __init__(self, dataURL = 'https://isvhsopen.com/api/status/', apiKey = 'ISVHSOPEN_API_KEY', timeout = 5):
     self.baseURL = dataURL
