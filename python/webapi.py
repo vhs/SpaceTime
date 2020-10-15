@@ -12,7 +12,7 @@ class WebApi:
   #POST http://isvhsopen.com/api/status/open?key=ISVHSOPEN_API_KEY&until=12:30
   #POST http://isvhsopen.com/api/status/closed?key=ISVHSOPEN_API_KEY
   
-  def __init__(self, dataURL = 'http://isvhsopen.com/api/status/', apiKey = 'ISVHSOPEN_API_KEY', timeout = 5):
+  def __init__(self, dataURL = 'https://isvhsopen.com/api/status/', apiKey = 'ISVHSOPEN_API_KEY', timeout = 5):
     self.baseURL = dataURL
     self.apiKey = apiKey
     self.timeout = timeout
