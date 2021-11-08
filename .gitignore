@@ -10,3 +10,4 @@ sw/*.hex
 sw/*.lst
 sw/*.map
 sw/*.srec
+__pycache__
