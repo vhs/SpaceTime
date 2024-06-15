@@ -1,0 +1,29 @@
+{
+    "folders": [
+        {
+            "name": "Firmware",
+            "path": "firmware"
+        },
+        {
+            "name": "Hardware",
+            "path": "hardware"
+        },
+        {
+            "name": "Software",
+            "path": "software"
+        },
+        {
+            "name": "Enclosure",
+            "path": "enclosure"
+        },
+        {
+            "name": "Doc",
+            "path": "doc"
+        },
+        {
+            "name": "Project",
+            "path": "."
+        }
+    ],
+    "settings": {}
+}
