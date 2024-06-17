@@ -56,7 +56,7 @@ def ProcessSerialMsg(msg, webApi, st):
             # Don't bother updating SpaceTime if time is within 10s of system time
             shouldUpdate = abs(SpaceTimeDrift) > max_clock_drift
         if shouldUpdate:
-            print("Synchronizing SpaceTime's clock to " + TimeToStr(curTime))
+            print(f"Synchronizing SpaceTime's clock to {TimeToStr(curTime)}")
             # SpaceTime Current clockID = 0
             st.SetTime(0, curTime)
 
@@ -66,9 +66,9 @@ def ProcessSerialMsg(msg, webApi, st):
         # we asked for it, or because it just expired.
 
         print(
-            "SpaceTime reports that Closing time is "
-            + ("not set" if msg.val == None else msg.val)
+            f"SpaceTime reports that Closing time is {'not set' if msg.val == None else msg.val}"
         )
+
         # Update WebAPI
         UpdateDoorStatus(webApi, msg.val)
     elif msg.type == "OK":
@@ -83,7 +83,7 @@ def ProcessSerialMsg(msg, webApi, st):
         st.GetTime(0)
         return
     else:
-        print('Serial message ignored: "' + msg.val + '"')
+        print(f"Serial message ignored: '{msg.val}'")
 
 
 def GetLocalIP():
@@ -95,7 +95,7 @@ def GetLocalIP():
         ip = s.getsockname()[0]
         s.close()
     except Exception as e:
-        print("IP lookup failed: ", e)
+        print(f"IP lookup failed: {e}")
     return ip
 
 
@@ -137,7 +137,7 @@ def setup():
     # Update the machine's local IP on the VHS Api. The timestamp can serve as a boot history.
     vhs.Update(api_var_ip, GetLocalIP())
 
-    print("Initializing Serial connection with SpaceTime (" + st.serial.name + ")...")
+    print(f"Initializing Serial connection with SpaceTime ({st.serial.name})...")
     while not st.IsConnected():
         print("Failed to init Serial connection with SpaceTime. Trying again...")
     print("Initialized!")
@@ -168,7 +168,7 @@ def loop(web, st):
         msg = st.Read()
         if dbg_showAllSerial:
             dbgmsg = "SerialDbg " + msg.type + ": " + str(msg.val)
-            print(dbgmsg if not dbgmsg.endswith("\r\n") else dbgmsg[:-2])
+            print((dbgmsg if not dbgmsg.endswith("\r\n") else dbgmsg[:-2]))
         ProcessSerialMsg(msg, web, st)
     elif ShouldSyncClock():
         # Query SpaceTime's clock. Its response will trigger us to update it if necessary.
@@ -192,7 +192,7 @@ def main():
         try:
             loop(web, st)
         except Exception as e:
-            print("Exception in main loop! ", e)
+            print(f"Exception in main loop! {e}")
             # Give some time for whatever caused the error to go away.
             # Also don't want to flood a log file with identical exceptions.
             time.sleep(5)

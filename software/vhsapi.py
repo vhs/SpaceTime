@@ -26,7 +26,7 @@ class VHSApi:
         sleepAmt = 0.25
         sleepMax = 16
         while self.Query(dataname) == False:
-            print("Waiting " + str(sleepAmt) + "s for retry...")
+            print(f"Waiting {str(sleepAmt)}s for retry...")
             sleep(sleepAmt)
             if sleepAmt < sleepMax:
                 sleepAmt *= 2
@@ -50,13 +50,13 @@ class VHSApi:
                 # {"last_updated":<unixtimestamp>,"name":"<dataname>","value":"<datavalue>"}
                 j = r.json()
                 if j["name"] == dataname:
-                    print('VHSApi Query  "' + dataname + '" is "' + j["value"] + '"')
+                    print(f"VHSApi Query {dataname} is {j['value']}")
                     return j["value"]
-            print('VHSApi Query of "' + dataname + '" failed.')
-            print("Response code: " + str(r.status_code))
-            print("Response text: " + r.text)
+            print(f"VHSApi Query of {dataname} failed.")
+            print(f"Response code: {str(r.status_code)}")
+            print(f"Response text: {r.text}")
         except Exception as e:
-            print("VHSApi Query failed: ", str(e))
+            print(f"VHSApi Query failed: {str(e)}")
         return False
 
     def Update(self, dataname, datavalue):
@@ -74,11 +74,11 @@ class VHSApi:
                     and j["result"]["name"] == dataname
                     and j["result"]["value"] == datavalue
                 ):
-                    print('VHSApi Update "' + dataname + '" to "' + datavalue + '"')
+                    print(f"VHSApi Update {dataname} to {datavalue}")
                     return datavalue
-            print('VHSApi Update of "' + dataname + '" failed.')
-            print("Response code: " + str(r.status_code))
-            print("Response text: " + r.text)
+            print(f"VHSApi Update of '{dataname}' failed.")
+            print(f"Response code: {str(r.status_code)}")
+            print(f"Response text: {r.text}")
         except Exception as e:
-            print("VHSApi Update failed: " + str(e))
+            print(f"VHSApi Update failed: {str(e)}")
         return False

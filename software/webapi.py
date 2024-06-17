@@ -25,13 +25,13 @@ class WebApi:
 
     def WaitForConnect(self):
         # Periodically queries the API until it receives a successful response.
-        sleepAmt = 0.25
-        sleepMax = 1616
+        sleep_amt = 0.25
+        sleep_max = 1616
         while self.Query() == False:
-            print("Waiting " + str(sleepAmt) + "s for retry...")
-            sleep(sleepAmt)
-            if sleepAmt < sleepMax:
-                sleepAmt *= 2
+            print(f"Waiting {str(sleep_amt)}s for retry...")
+            sleep(sleep_amt)
+            if sleep_amt < sleep_max:
+                sleep_amt *= 2
 
     def Query(self, dataname=None):
         # Returns the value of dataname from the isvhsopen server, or False if query failed.
@@ -48,20 +48,16 @@ class WebApi:
                     val = j.get(dataname)
                     # val is the value of dataname, or None if no such dataname exists
                     if val:
-                        print('isvhsopen Query "' + dataname + '" is "' + val + '"')
+                        print(f"isvhsopen Query {dataname} is {val}")
                         return val
                 else:
                     # No dataname was specified, so return full json response
                     return j
-            print(
-                "isvhsopen Query"
-                + (' of "' + dataname + '"' if dataname != None else "")
-                + " failed."
-            )
-            print("Response code: " + str(r.status_code))
-            print("Response text: " + r.text)
+            print(f"isvhsopen Query of '{dataname}' failed.")
+            print(f"Response code: {str(r.status_code)}")
+            print(f"Response text: {r.text}")
         except Exception as e:
-            print("isvhsopen Query failed: ", str(e))
+            print(f"isvhsopen Query failed: {str(e)}")
         return False
 
     def Update(self, doorStatus, until=""):
@@ -80,16 +76,12 @@ class WebApi:
                 if j["result"] == "ok" and j["status"] == doorStatus:
                     # Note we're just trusting that openUntil was set correctly
                     print(
-                        'isvhsopen Update door status to "'
-                        + doorStatus
-                        + '" until "'
-                        + str(j.get("openUntil"))
-                        + '"'
+                        f"isvhsopen Update door status to '{doorStatus}' until {str(j.get('openUntil'))}"
                     )
                     return j
-            print('isvhsopen Update door status to "' + doorStatus + '" failed.')
-            print("Response code: " + str(p.status_code))
-            print("Response text: " + p.text)
+            print(f"isvhsopen Update door status to {doorStatus} failed.")
+            print(f"Response code: {str(p.status_code)}")
+            print(f"Response text: {p.text}")
         except Exception as e:
-            print("isvhsopen Update failed: " + str(e))
+            print(f"isvhsopen Update failed: {str(e)}")
         return False
