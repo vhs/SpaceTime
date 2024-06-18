@@ -1,0 +1,10 @@
+certifi==2024.6.2
+charset-normalizer==3.3.2
+cheroot==10.0.1
+idna==3.7
+jaraco.functools==4.0.1
+more-itertools==10.3.0
+pyserial==3.5
+requests==2.32.3
+urllib3==2.2.2
+web.py==0.62
