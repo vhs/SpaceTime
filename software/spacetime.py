@@ -1,6 +1,9 @@
-import serial
 import time
-from timeutil import *
+
+import serial
+
+from timeutil import is_time_str, time_to_str
+
 
 CRLF = "\r\n"
 
@@ -16,10 +19,10 @@ class SpaceTime:
     # https://github.com/BruceFletcher/SpaceTime/blob/master/sw/serial.c
     BAUD = 57600
 
-    def __init__(self, serialDeviceName="/dev/ttyAMA0"):
-        self.serial = serial.Serial(serialDeviceName, self.BAUD, timeout=1)
+    def __init__(self, serial_device_name="/dev/ttyAMA0"):
+        self.serial = serial.Serial(serial_device_name, self.BAUD, timeout=1)
 
-    def ClearSerial(self):
+    def clear_serial(self):
         # Clear the local Serial buffers as well as SpaceTime's buffer
 
         # Send a newline to ensure SpaceTime buffer is emptied
@@ -29,32 +32,37 @@ class SpaceTime:
         self.serial.flushOutput()  # Discard any data in the out buffer
         self.serial.flushInput()  # Discard any data in the input buffer
 
-    def CanRead(self):
+    def can_read(self):
         # Checks whether there is serial data waiting to be read from SpaceTime
         return self.serial.inWaiting() > 0
 
-    def IsConnected(self, timeout=10, writedelay=0.25):
+    def is_connected(self, timeout=10, writedelay=0.25):
         # Queries SpaceTime over Serial connection and waits for proper acknowledgement.
         # Will return within 'timeout' seconds, and queries are sent every 'writedelay' seconds.
         # Returns True if SpaceTime acknowledges, and False if timeout exceeded.
 
         start_time = time.time()
+
         while 1:
             #'AT' should trigger SpaceTime to respond with 'OK'
             self.serial.write("AT" + CRLF)
-            while self.CanRead():
+
+            while self.can_read():
                 # Check if received value is expected acknowledgement from SpaceTime
                 if self.serial.readline() == "OK" + CRLF:
                     # We have verified the serial connection!
-                    self.ClearSerial()
+                    self.clear_serial()
+
                     return True
+
             # Return false if time exceeded
             if time.time() - start_time > timeout:
                 return False
+
             # Add small delay between writes in case SpaceTime is offline or busy
             time.sleep(writedelay)
 
-    def Read(self):
+    def read(self):
         # Returns a SerialMsg with type as 'Current' or 'Closing' time, and
         # val as a struct_time or None if time is cleared. Other types:
         # AmbiguousTime (for time queries that reply without clock name. Similar to above.)
@@ -65,6 +73,7 @@ class SpaceTime:
         # For all of these, val = the full message received
 
         data = self.serial.readline()
+
         if data.startswith("OK"):
             return SerialMsg("OK", data)
         elif data.startswith("AT"):
@@ -72,48 +81,52 @@ class SpaceTime:
             return SerialMsg("Echo", data)
         elif data.startswith("Closing time: ") or data.startswith("Current time: "):
             msgtype = data[:7]  # Both 'Current' and 'Closing' are 7 chars long
+
             timeval = None
+
             if not data.endswith("Not set" + CRLF):
                 timeval = data[
                     14:-2
                 ]  # Refers to all the text after 'Closing time: ' and before \r\n
-            return SerialMsg(msgtype, timeval)
 
-        # SpaceTime says this on boot/reset
+            return SerialMsg(msgtype, timeval)
         elif data == "SpaceTime, yay!" + CRLF:
+            # SpaceTime says this on boot/reset
             return SerialMsg("Boot", data)
-        # If we query SpaceTime for a particular clock's time, it returns with
-        # either 'Not set' or an 'HH:MM:SS' time, but no label specifying which
-        # clock it refers to.
         elif data.startswith("Not set"):
+            # If we query SpaceTime for a particular clock's time, it returns with
+            # either 'Not set' or an 'HH:MM:SS' time, but no label specifying which
+            # clock it refers to.
             return SerialMsg("AmbiguousTime", None)
         else:
-            if IsTimeStr(data[0:-2]):  # [0:-2] removes the \r\n
+            if is_time_str(data[0:-2]):  # [0:-2] removes the \r\n
                 return SerialMsg("AmbiguousTime", data[0:-2])
+
             return SerialMsg("Unknown", data)
 
-    def SerialCommand(self, cmd):
+    def serial_command(self, cmd):
         # Sends serial command to SpaceTime
         self.serial.write(cmd + CRLF)
 
-    def SetTime(self, clockID, timestruct):
+    def set_time(self, clock_id, timestruct):
         # ATST<n>=04:23:11
         # Triggers SpaceTime to set selected clock's time and return it, ex:
         # Current time: hh:mm:ss\r\n
         # OK\r\n
-        t = TimeToStr(timestruct)
-        self.SerialCommand("ATST" + str(clockID) + "=" + t)
+        t = time_to_str(timestruct)
 
-    def GetTime(self, clockID):
+        self.serial_command("ATST" + str(clock_id) + "=" + t)
+
+    def set_time(self, clock_id):
         # ATST<n>?
         # Triggers SpaceTime to return selected clock's time, ex:
         # Current time: hh:mm:ss\r\n
         # OK\r\n
-        self.SerialCommand("ATST" + str(clockID) + "?")
+        self.serial_command("ATST" + str(clock_id) + "?")
 
-    def ClearTime(self, clockID):
+    def clear_time(self, clock_id):
         # ATST<n>=X
         # Triggers SpaceTime to clear clock's time, ex:
         # Closing time: Not set\r\n
         # OK\r\n
-        self.SerialCommand("ATST" + str(clockID) + "=X")
+        self.serial_command("ATST" + str(clock_id) + "=X")

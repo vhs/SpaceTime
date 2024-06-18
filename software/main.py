@@ -1,17 +1,19 @@
-import time
 import socket
-from spacetime import SpaceTime
+import time
+
+from restserv import (
+    rest_serv,
+)  # Webserver for REST API to allow updates from the VHS network
+from timeutil import str_to_time, time_offset_seconds, time_to_str
 from vhsapi import VHSApi  # api.vanhack.ca
 from webapi import WebApi  # isvhsopen.com/api/status/
-from restserv import (
-    RestServ,
-)  # Webserver for REST API to allow updates from the VHS network
-from timeutil import *
 
-dbg_showAllSerial = False  # If true, prints out all received serial messages
-lastClockSync = 0  # Time of last clock sync with SpaceTime
-lastHeartbeat = 0  # Time of last update with isvhsopen.com WebApi
-doorStatus_cache = (
+from spacetime import SpaceTime
+
+dbg_show_all_serial = False  # If true, prints out all received serial messages
+last_clock_sync = 0  # Time of last clock sync with SpaceTime
+last_heartbeat = 0  # Time of last update with isvhsopen.com WebApi
+door_status_cache = (
     ""  # The last known door status, to send periodic heartbeat to WebApi
 )
 api_var_ip = "spacetime_ip"
@@ -20,45 +22,53 @@ max_clock_drift = (
 )
 
 
-def UpdateDoorStatus(webApi, closing_time):
+def update_door_status(web_api, closing_time):
+    global last_heartbeat, door_status_cache
+
     # Save current time and door status to send periodic heartbeats to WebAPI
-    global lastHeartbeat, doorStatus_cache
-    lastHeartbeat = time.time()
-    doorStatus_cache = closing_time
+    last_heartbeat = time.time()
+
+    door_status_cache = closing_time
+
     # Update WebAPI with door status. WebAPI is smart enough
     # to ignore duplicate submissions, so unnecessary updates
     # aren't harmful and do not affect the timestamp.
     if closing_time == None:
-        webApi.Update("closed")
+        web_api.update("closed")
     else:
         # Removing seconds part
         closing_time = closing_time[:5]
-        webApi.Update("open", closing_time)
+
+        web_api.update("open", closing_time)
 
 
-def ProcessSerialMsg(msg, webApi, st):
+def process_serial_msg(msg, web_api, st):
 
     if msg.type == "Current" or msg.type == "AmbiguousTime":
+        global last_clock_sync
+
         # SpaceTime is telling us what it thinks is the current time
         # It's telling us either because the user just set it, or
         # because we asked it.
         # Currently, we never ask for the Closing time, so if we receive
         # an AmbiguousTime, we can safely assume it is the Current time.
 
-        global lastClockSync
-        lastClockSync = time.time()
-        curTime = time.localtime(lastClockSync)
+        last_clock_sync = time.time()
+        cur_time = time.localtime(last_clock_sync)
 
-        shouldUpdate = True
+        should_update = True
+
         if msg.val != None:
             # Check if SpaceTime time is close to current system time
-            SpaceTimeDrift = TimeOffsetSeconds(curTime, StrToTime(msg.val))
+            space_time_drift = time_offset_seconds(cur_time, str_to_time(msg.val))
+
             # Don't bother updating SpaceTime if time is within 10s of system time
-            shouldUpdate = abs(SpaceTimeDrift) > max_clock_drift
-        if shouldUpdate:
-            print(f"Synchronizing SpaceTime's clock to {TimeToStr(curTime)}")
+            should_update = abs(space_time_drift) > max_clock_drift
+        if should_update:
+            print(f"Synchronizing SpaceTime's clock to {time_to_str(cur_time)}")
+
             # SpaceTime Current clockID = 0
-            st.SetTime(0, curTime)
+            st.set_time(0, cur_time)
 
     elif msg.type == "Closing":
         # SpaceTime is telling us the status of closing time.
@@ -70,7 +80,7 @@ def ProcessSerialMsg(msg, webApi, st):
         )
 
         # Update WebAPI
-        UpdateDoorStatus(webApi, msg.val)
+        update_door_status(web_api, msg.val)
     elif msg.type == "OK":
         return  # Can ignore 'OK' responses
     elif msg.type == "Echo":
@@ -78,45 +88,57 @@ def ProcessSerialMsg(msg, webApi, st):
     elif msg.type == "Boot":
         print("SpaceTime has just been reset!")
         print("Resetting Web API variables and setting SpaceTime's clock")
-        UpdateDoorStatus(webApi, None)
+
+        update_door_status(web_api, None)
+
         # Query SpaceTime's clock. Its response will trigger us to update it if necessary.
-        st.GetTime(0)
-        return
+        st.get_time(0)
     else:
         print(f"Serial message ignored: '{msg.val}'")
 
 
-def GetLocalIP():
+def get_local_ip():
     # Returns the machine's local IP address as a string, or 'unknown' if error.
     ip = "unknown"
+
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
         s.connect(("8.8.8.8", 80))
+
         ip = s.getsockname()[0]
+
         s.close()
     except Exception as e:
         print(f"IP lookup failed: {e}")
+
     return ip
 
 
-def ShouldSyncClock():
+def should_sync_clock():
     # Sync the clock every 24h, and do it when we're around
     # 40-50s in the current minute (to minimize the chance of the clock
     # jumping back 1min or forward 2min).
     _24h = 86400  # seconds in 24h
-    curTime = time.time()
-    if curTime - lastClockSync > _24h:
-        curTime = time.localtime(curTime)
-        if 40 < curTime.tm_sec < 50:
+
+    cur_time = time.time()
+
+    if cur_time - last_clock_sync > _24h:
+        cur_time = time.localtime(cur_time)
+
+        if 40 < cur_time.tm_sec < 50:
             return True
+
     return False
 
 
-def ShouldSendHeartbeat():
+def should_send_heartbeat():
     # Send a heartbeat to isvhsopen.com every 15min
     _15min = 900  # seconds in 15min
-    curTime = time.time()
-    return curTime - lastHeartbeat > _15min
+
+    cur_time = time.time()
+
+    return cur_time - last_heartbeat > _15min
 
 
 def setup():
@@ -127,57 +149,72 @@ def setup():
     # returns initialized (WebAPI, SpaceTime)
 
     print("Initializing SpaceTime...")
+
     vhs = VHSApi()
     web = WebApi()
     st = SpaceTime()
 
     print("Connecting to the internet...")
-    web.WaitForConnect()
+    web.wait_for_connect()
     print("Connected!")
+
     # Update the machine's local IP on the VHS Api. The timestamp can serve as a boot history.
-    vhs.Update(api_var_ip, GetLocalIP())
+    vhs.update(api_var_ip, get_local_ip())
 
     print(f"Initializing Serial connection with SpaceTime ({st.serial.name})...")
-    while not st.IsConnected():
+
+    while not st.is_connected():
         print("Failed to init Serial connection with SpaceTime. Trying again...")
+
     print("Initialized!")
 
     print("Initializing webserver for REST API (only available to LAN)")
-    RestServ(st)
+
+    rest_serv(st)
 
     # Query Closing time (this is the only time we do this)
     # in case RPi was rebooted but SpaceTime wasn't.
-    st.GetTime(1)  # Closing time is ID 1
-    st.Read()  # Ignore the echo of the GetTime command
-    ct = st.Read()  # Read the response
+    st.set_time(1)  # Closing time is ID 1
+
+    st.read()  # Ignore the echo of the GetTime command
+
+    ct = st.read()  # Read the response
+
     # It is an unlabeled time, but we know it should be Closing time
     if ct.type == "AmbiguousTime":
         ct.type = "Closing"
+
         # Update Web Api if necessary
-        ProcessSerialMsg(ct, web, st)
+        process_serial_msg(ct, web, st)
 
     # Query SpaceTime's clock. Its response will trigger us to update it if necessary.
-    st.GetTime(0)  # Current time is ID 0
+    st.set_time(0)  # Current time is ID 0
+
     return web, st
 
 
 def loop(web, st):
     # Check for new Serial messages every second.
     # If there is a Serial message to read, read and process it.
-    if st.CanRead():
-        msg = st.Read()
-        if dbg_showAllSerial:
+    if st.can_read():
+        msg = st.read()
+
+        if dbg_show_all_serial:
             dbgmsg = "SerialDbg " + msg.type + ": " + str(msg.val)
+
             print((dbgmsg if not dbgmsg.endswith("\r\n") else dbgmsg[:-2]))
-        ProcessSerialMsg(msg, web, st)
-    elif ShouldSyncClock():
+
+        process_serial_msg(msg, web, st)
+    elif should_sync_clock():
         # Query SpaceTime's clock. Its response will trigger us to update it if necessary.
-        st.GetTime(0)
-        # Give SpaceTime enough time to respond so that we only send one st.GetTime(0) per sync period.
+        st.get_time(0)
+
+        # Give SpaceTime enough time to respond so that we only send one st.get_time(0) per sync period.
         time.sleep(0.5)
-    elif ShouldSendHeartbeat():
+    elif should_send_heartbeat():
         print("Sending Heartbeat to Web API...")
-        UpdateDoorStatus(web, doorStatus_cache)
+
+        update_door_status(web, door_status_cache)
     else:
         time.sleep(1)
 
@@ -193,6 +230,7 @@ def main():
             loop(web, st)
         except Exception as e:
             print(f"Exception in main loop! {e}")
+
             # Give some time for whatever caused the error to go away.
             # Also don't want to flood a log file with identical exceptions.
             time.sleep(5)
