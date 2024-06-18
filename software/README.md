@@ -1,4 +1,4 @@
-## SpaceTime - Python Overview
+# SpaceTime - Python Overview
 
 The SpaceTime box contains a Raspberry Pi and a custom AVR-based PCB called [SpaceTime](../README.md). The Raspberry Pi runs a Python program that performs NTP time sync and facilitates network communication between SpaceTime and both the [isvhsopen.com Web API](https://isvhsopen.com/api/status/) ([GitHub](https://github.com/vhs/isvhsopen)) and the [Hackspace API](http://api.vanhack.ca) ([GitHub](https://github.com/vhs/api)). Communication with the Hackspace API is mostly deprecated in favour of the new isvhsopen Web API, but is still used to log the Raspberry Pi's local IP address. A local web server also provides a REST interface on port 80 to change the status from within the VHS local network.
 

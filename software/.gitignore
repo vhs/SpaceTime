@@ -1,0 +1,13 @@
+*
+!.gitignore
+
+!exceptions/
+!exceptions/*.py
+!*.py
+
+!README.md
+
+!requirements.txt
+
+!spacetime.sample.conf
+!spacetime.service
